@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Learn to read and plot points on the coordinate plane, then play a battleship-style game against the computer or a partner.">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Coordinate Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600;700&display=swap">
+<style>
+/* Layout: graph-paper page; a notebook-tab header switches between Learn (lesson strips: text + figure) and two game screens (console bar above two boards side by side) */
+:root{
+  --paper:#f2f5f1; --paper-line:#e2e9e2; --panel:#ffffff; --board:#fbfdfb; --grid:#d2ddd5; --line:#d5dfd8;
+  --ink:#16252d; --muted:#55666e; --tint:#eef3ef;
+  --x:#1c5ec2; --x-soft:#e1ebfa; --y:#b04f07; --y-soft:#fbe9da; --origin:#7432d0;
+  --hit:#cf1f3b; --hit-soft:#f9d3d9; --miss:#7d8f96; --ship:#3b5562; --ship-soft:#c8d6dc;
+  --pencil:#f2b705; --pencil-edge:#c99500; --pencil-ink:#1d1a10;
+  --good:#1d7546; --good-soft:#dcf2e5; --bad:#b42318; --bad-soft:#fde3df; --warn:#8a5a00; --warn-soft:#fdf0cf;
+  --f-display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --f-body:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#10181c; --paper-line:#172227; --panel:#172329; --board:#0f171b; --grid:#29383f; --line:#2b3a41;
+  --ink:#e4edf0; --muted:#9aacb3; --tint:#152126;
+  --x:#6ea8ff; --x-soft:#18294a; --y:#ffa04a; --y-soft:#3a2614; --origin:#b892ff;
+  --hit:#ff5d70; --hit-soft:#4a1c24; --miss:#71848b; --ship:#93b3c3; --ship-soft:#2c4350;
+  --pencil:#f2c230; --pencil-edge:#c99a10; --pencil-ink:#1d1a10;
+  --good:#5fd394; --good-soft:#163526; --bad:#ff7a6b; --bad-soft:#3d1a16; --warn:#f2c46b; --warn-soft:#3a2d10;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#10181c; --paper-line:#172227; --panel:#172329; --board:#0f171b; --grid:#29383f; --line:#2b3a41;
+  --ink:#e4edf0; --muted:#9aacb3; --tint:#152126;
+  --x:#6ea8ff; --x-soft:#18294a; --y:#ffa04a; --y-soft:#3a2614; --origin:#b892ff;
+  --hit:#ff5d70; --hit-soft:#4a1c24; --miss:#71848b; --ship:#93b3c3; --ship-soft:#2c4350;
+  --pencil:#f2c230; --pencil-edge:#c99a10; --pencil-ink:#1d1a10;
+  --good:#5fd394; --good-soft:#163526; --bad:#ff7a6b; --bad-soft:#3d1a16; --warn:#f2c46b; --warn-soft:#3a2d10;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background-color:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;
+  background-image:linear-gradient(var(--paper-line) 1px,transparent 1px),linear-gradient(90deg,var(--paper-line) 1px,transparent 1px);
+  background-size:24px 24px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 56px}
+.wrap{max-width:1120px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--f-display);line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:clamp(1.6rem,3.2vw,2.1rem);font-weight:800;letter-spacing:-.015em}
+h3{font-size:1.35rem;font-weight:800}
+p{margin:0}
+button{font:inherit}
+:focus-visible{outline:3px solid var(--pencil);outline-offset:2px}
+.pair{font-family:var(--f-mono);font-weight:600;white-space:nowrap}
+.cx{color:var(--x)} .cy{color:var(--y)} .co{color:var(--origin)}
+b.cx,b.cy,b.co{font-weight:700}
+
+/* header */
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px;padding-top:22px;border-bottom:2px solid var(--ink)}
+.brand{display:flex;gap:12px;align-items:center;padding-bottom:12px}
+.brand svg{flex:none}
+.brand h1{font-size:clamp(1.55rem,3.6vw,2.1rem);font-weight:800;letter-spacing:-.02em}
+.brand p{color:var(--muted);font-size:.95rem;margin-top:2px}
+nav.tabs{display:flex;gap:4px;max-width:100%}
+.tab{appearance:none;border:2px solid var(--ink);border-bottom:0;background:var(--panel);color:var(--ink);font-weight:700;font-size:.95rem;padding:.6rem 1rem;border-radius:10px 10px 0 0;cursor:pointer;position:relative;top:2px;white-space:nowrap}
+.tab:hover{background:var(--tint)}
+.tab[aria-selected="true"]{background:var(--pencil);color:var(--pencil-ink);border-bottom:2px solid var(--pencil);}
+@media (max-width:420px){.tab{padding:.55rem .7rem;font-size:.88rem}}
+main{padding-top:28px}
+
+/* buttons */
+.btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:.45em;border:2px solid var(--ink);background:var(--panel);color:var(--ink);font-weight:700;border-radius:10px;padding:.55rem 1rem;cursor:pointer;line-height:1.2;text-decoration:none}
+.btn:hover{background:var(--tint)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--pencil);border-color:var(--pencil-edge);color:var(--pencil-ink);box-shadow:0 3px 0 var(--pencil-edge)}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.primary:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--pencil-edge)}
+.btn.big{font-size:1.1rem;padding:.75rem 1.4rem}
+.btn.sm{font-size:.88rem;padding:.4rem .75rem;border-width:1.5px}
+.btn.ghost{border-color:var(--line)}
+.btn.hitbtn{border-color:var(--hit);color:var(--hit)}
+.chip{appearance:none;border:1.5px solid var(--line);background:var(--board);border-radius:999px;padding:.35rem .8rem;cursor:pointer;color:var(--ink)}
+.chip:hover{border-color:var(--ink)}
+
+/* learn */
+.intro{display:grid;gap:14px;max-width:70ch}
+.intro .lead{font-size:1.1rem;color:var(--muted)}
+.key{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.95rem}
+.key span{display:inline-flex;align-items:center;gap:8px}
+.key i{display:inline-block;width:22px;height:4px;border-radius:2px}
+.key i.o{width:10px;height:10px;border-radius:50%;background:var(--origin)}
+.lesson{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:28px 40px;align-items:start;padding-block:40px;border-bottom:1.5px dashed var(--line)}
+.lesson.single{grid-template-columns:minmax(0,1fr)}
+@media (max-width:860px){.lesson{grid-template-columns:minmax(0,1fr)}}
+.ltext{display:grid;gap:14px;max-width:62ch;min-width:0}
+.eyebrow{font:700 .78rem var(--f-body);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.ltext ul{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.sheet{margin:0;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+.sheet figcaption{font-size:.88rem;color:var(--muted);padding:4px 6px 2px}
+.tip{border-left:4px solid var(--pencil);background:var(--panel);padding:12px 14px;border-radius:0 10px 10px 0}
+.tip b{font-family:var(--f-display)}
+.anat{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px 32px;align-items:center}
+@media (max-width:640px){.anat{grid-template-columns:minmax(0,1fr)}}
+.bigpair{font:600 clamp(3.4rem,10vw,5.4rem)/1 var(--f-mono);letter-spacing:-.03em;color:var(--muted);white-space:nowrap}
+.bigpair .cx,.bigpair .cy{font-weight:700}
+.anat-notes{display:grid;gap:10px}
+.anat-notes p{padding:10px 14px;border-radius:10px}
+.anat-notes .an-x{background:var(--x-soft)} .anat-notes .an-y{background:var(--y-soft)}
+.an-x b:first-child{color:var(--x)} .an-y b:first-child{color:var(--y)}
+.tablewrap{overflow-x:auto}
+table.signs{border-collapse:collapse;min-width:420px;background:var(--panel);border-radius:10px;overflow:hidden}
+table.signs th,table.signs td{border:1.5px solid var(--line);padding:8px 14px;text-align:center}
+table.signs thead th{font-size:.85rem;color:var(--muted);font-weight:700}
+table.signs tbody th{font:italic 700 1.2rem var(--f-body)}
+.twocol{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px}
+
+/* pencil stage */
+.steps{list-style:none;padding:0;margin:0;display:grid;gap:8px;counter-reset:st}
+.steps li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);transition:border-color .2s,background .2s;counter-increment:st}
+.steps li::before{content:counter(st);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:2px solid var(--line);font:700 .9rem var(--f-mono);color:var(--muted)}
+.steps li.on{border-color:var(--ink);background:var(--tint)}
+.steps li.on::before{background:var(--pencil);border-color:var(--pencil-edge);color:var(--pencil-ink)}
+.steps li.done::before{content:"✓";border-color:var(--good);color:var(--good)}
+.stage-controls{display:grid;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.check{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--x)}
+.small{font-size:.9rem;color:var(--muted)}
+
+/* coordinate entry */
+.centry{display:inline-flex;align-items:flex-end;gap:6px;font-family:var(--f-mono)}
+.centry .paren,.centry .comma{font-size:2.2rem;line-height:1;color:var(--muted);padding-bottom:6px}
+.cf{display:flex;flex-direction:column;align-items:center;gap:2px}
+.cf label{font:italic 700 .95rem var(--f-body)}
+.cf-x label{color:var(--x)} .cf-y label{color:var(--y)}
+.cf-row{display:flex;border:2px solid var(--x);border-radius:10px;overflow:hidden;background:var(--panel)}
+.cf-y .cf-row{border-color:var(--y)}
+.cf-row:focus-within{outline:3px solid var(--pencil);outline-offset:2px}
+.cf input{width:3.4ch;font:700 1.75rem var(--f-mono);text-align:center;border:0;background:transparent;color:var(--ink);padding:4px 2px;outline:none}
+.cf input::placeholder{color:var(--grid)}
+.sign{border:0;width:32px;font:700 1.05rem var(--f-mono);cursor:pointer;background:var(--x-soft);color:var(--x)}
+.cf-y .sign{background:var(--y-soft);color:var(--y)}
+.sign:disabled,.cf input:disabled{opacity:.5;cursor:not-allowed}
+
+/* boards */
+svg.board{display:block;width:100%;height:auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.b-bg{fill:var(--board)}
+.b-grid{stroke:var(--grid);stroke-width:1}
+.b-ax-x{stroke:var(--x);stroke-width:2.6} .b-ax-y{stroke:var(--y);stroke-width:2.6}
+.b-ar-x{fill:var(--x)} .b-ar-y{fill:var(--y)}
+.lbl{font:600 13px var(--f-mono);paint-order:stroke;stroke:var(--board);stroke-width:4px;stroke-linejoin:round}
+.board.lg .lbl{font-size:16px}
+.lbl-x{fill:var(--x)} .lbl-y{fill:var(--y)} .lbl-0{fill:var(--origin)}
+.axname{font:italic 700 17px var(--f-body)}
+.axname.x{fill:var(--x)} .axname.y{fill:var(--y)}
+.origin{fill:var(--origin)}
+.note{font:700 14px var(--f-body);paint-order:stroke;stroke:var(--board);stroke-width:5px;stroke-linejoin:round}
+.note.x{fill:var(--x)} .note.y{fill:var(--y)} .note.o{fill:var(--origin)}
+.qtint{fill:var(--tint)}
+.qlbl{font:800 30px var(--f-display);fill:var(--muted)}
+.qsign{font:700 15px var(--f-mono);fill:var(--muted)}
+.qsign .tx{fill:var(--x)} .qsign .ty{fill:var(--y)}
+.ship-o{stroke:var(--ship);stroke-linecap:round}
+.ship-i{stroke:var(--ship-soft);stroke-linecap:round}
+.ship-r{fill:var(--ship)}
+.ship.sunk .ship-o{stroke:var(--hit)} .ship.sunk .ship-i{stroke:var(--hit-soft)} .ship.sunk .ship-r{fill:var(--hit)}
+.ship.reveal .ship-o{stroke:var(--muted);stroke-dasharray:6 5} .ship.reveal .ship-i{stroke:var(--board)}
+.ship.sel .ship-o{stroke:var(--pencil-edge)} .ship.sel .ship-i{stroke:var(--pencil)} .ship.sel .ship-r{fill:var(--pencil-ink)}
+svg.board.placing{cursor:pointer}
+.ship.ghost{opacity:.65} .ship.ghost .ship-o{stroke-dasharray:5 4}
+.ship.ghost.bad .ship-o{stroke:var(--hit)}
+.m-hit{fill:var(--hit);stroke:var(--board);stroke-width:1.5}
+.m-miss{fill:none;stroke:var(--miss);stroke-width:2.2} .m-miss-d{fill:var(--miss)}
+.m-dot{fill:var(--ink);stroke:var(--board);stroke-width:2}
+.fresh{animation:pop .5s ease-out both;transform-box:fill-box;transform-origin:center}
+@keyframes pop{0%{transform:scale(.2);opacity:.2}65%{transform:scale(1.3);opacity:1}100%{transform:scale(1)}}
+.trail{stroke-width:4.5;stroke-linecap:round;fill:none} .trail.x{stroke:var(--x)} .trail.y{stroke:var(--y)}
+.count{font:700 14px var(--f-mono);paint-order:stroke;stroke:var(--board);stroke-width:4px;stroke-linejoin:round}
+.count.x{fill:var(--x)} .count.y{fill:var(--y)}
+.g-x,.g-y{stroke-width:2.6;stroke-dasharray:5 4;stroke-linecap:round} .g-x{stroke:var(--x)} .g-y{stroke:var(--y)}
+.g-ring{fill:none;stroke:var(--ink);stroke-width:1.6}
+.b-pair{font:700 15px var(--f-mono);fill:var(--ink);paint-order:stroke;stroke:var(--board);stroke-width:5px;stroke-linejoin:round}
+.board.lg .b-pair{font-size:17px}
+.b-pair .tx{fill:var(--x)} .b-pair .ty{fill:var(--y)}
+.b-letter{font:800 17px var(--f-display);fill:var(--ink);paint-order:stroke;stroke:var(--board);stroke-width:5px}
+.aim circle{fill:none;stroke:var(--ink);stroke-width:2.2}
+.aim line{stroke:var(--ink);stroke-width:2.2;stroke-linecap:round}
+.aim{animation:aimpulse 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes aimpulse{50%{transform:scale(1.12)}}
+@media (prefers-reduced-motion: reduce){.fresh,.aim{animation:none}}
+
+/* games */
+.game-intro{display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+.game-intro p{color:var(--muted);max-width:62ch;margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.9rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.settings{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:.82rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+select,.field input[type=text]{font:inherit;color:var(--ink);background:var(--board);border:1.5px solid var(--line);border-radius:8px;padding:.45rem .6rem;max-width:100%}
+.console{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;justify-content:space-between;background:var(--panel);border:2px solid var(--ink);border-radius:16px;padding:16px 18px}
+.msg{flex:1 1 300px;min-width:0;display:grid;gap:8px}
+.m-main{font:800 1.25rem/1.25 var(--f-display)}
+.m-sub{color:var(--muted)}
+.msg[data-tone="warn"] .m-main{color:var(--warn)}
+.msg[data-tone="hit"] .m-main{color:var(--hit)}
+.msg[data-tone="win"] .m-main{color:var(--good)}
+.m-recent{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:.95rem}
+.m-recent .who{display:inline-block;min-width:5.6em;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.res{font-family:var(--f-body);font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;padding:1px 7px;border-radius:999px;border:1.5px solid currentColor}
+.res.hit{color:var(--hit)} .res.miss{color:var(--miss)}
+.fire-area{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px}
+.boards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:18px}
+@media (max-width:780px){.boards{grid-template-columns:minmax(0,1fr)}}
+.bcard{margin:0;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px 12px 14px;min-width:0;display:grid;gap:10px;align-content:start}
+.bcard figcaption{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;padding:2px 4px}
+.bcard .cap{font:800 1.15rem var(--f-display)}
+.bcard .sub{font-size:.88rem;color:var(--muted)}
+.bwrap{position:relative}
+.lock-note{display:none}
+.locked .bwrap .board{opacity:.3;pointer-events:none}
+.locked .lock-note{display:grid;place-items:center;position:absolute;inset:0;font:800 1.1rem var(--f-display);text-align:center;padding:20px;color:var(--ink)}
+.fleet{list-style:none;padding:0 4px;margin:0;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem}
+.fleet li{display:inline-flex;gap:6px;align-items:center}
+.pips{display:inline-flex;gap:3px}
+.pips i{width:9px;height:9px;border-radius:50%;background:var(--ship-soft);border:1.5px solid var(--ship);display:inline-block}
+.pips i.h{background:var(--hit);border-color:var(--hit)}
+.fleet li.sunk>span:first-child{text-decoration:line-through;color:var(--muted)}
+.tools{display:grid;gap:10px;padding:2px 4px}
+.ship-picks{display:flex;flex-wrap:wrap;gap:6px}
+.pick{appearance:none;display:inline-flex;gap:7px;align-items:center;border:1.5px solid var(--line);background:var(--board);color:var(--ink);border-radius:8px;padding:.35rem .6rem;cursor:pointer;font-size:.88rem}
+.pick.sel{border-color:var(--ink);background:var(--pencil);color:var(--pencil-ink)}
+.pick.placed:not(.sel){color:var(--muted)}
+.pick.placed:not(.sel)::after{content:"✓";color:var(--good);font-weight:700}
+.place-msg{font-size:.9rem;color:var(--muted);min-height:1.4em}
+.place-msg.warn{color:var(--warn)}
+.under{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-start;justify-content:space-between;margin-top:16px}
+.stats{display:flex;gap:18px;font-variant-numeric:tabular-nums}
+.stats div{display:grid}
+.stats b{font:800 1.5rem var(--f-display)}
+.stats span{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+details.log{flex:1 1 320px;background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;min-width:0}
+details.log summary{cursor:pointer;font-weight:700}
+.logcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:8px}
+.logcols h4{font-size:.95rem;margin-bottom:4px}
+.logcols ol{margin:0;padding-left:1.8em;display:grid;gap:3px;font-size:.92rem;font-variant-numeric:tabular-nums;max-height:220px;overflow:auto}
+
+/* partner */
+.panel{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:18px}
+.modes{border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}
+.modes legend{font:800 1.15rem var(--f-display);margin-bottom:10px;padding:0}
+.mode{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;background:var(--board)}
+.mode:has(input:checked){border-color:var(--ink);background:var(--tint)}
+.mode input{margin-top:4px;width:18px;height:18px;accent-color:var(--x);flex:none}
+.mode b{display:block;font-family:var(--f-display);font-size:1.05rem}
+.mode span span{display:block;color:var(--muted);font-size:.92rem;margin-top:2px}
+.panel .settings{margin:0;padding:0;border:0;background:none}
+.place-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:780px){.place-grid{grid-template-columns:minmax(0,1fr)}}
+.curtain{background:var(--ink);color:var(--paper);border-radius:18px;padding:48px 24px;display:grid;justify-items:center;gap:14px;text-align:center}
+.curtain .eyebrow{color:var(--pencil)}
+.curtain h3{font-size:clamp(1.8rem,5vw,2.8rem)}
+.curtain p{max-width:46ch;opacity:.85}
+.curtain .row{justify-content:center}
+.curtain .btn:not(.primary){background:transparent;color:var(--paper);border-color:var(--paper)}
+.turn-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.call-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:0 4px}
+.call-msg{padding:0 4px}
+
+/* quiz */
+.quiz{display:grid;gap:16px;margin-top:8px}
+.quiz-head{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:baseline;justify-content:space-between}
+.score{font:700 1rem var(--f-mono);font-variant-numeric:tabular-nums}
+.qcard{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,330px);gap:18px 24px;align-items:start}
+@media (max-width:760px){.qcard{grid-template-columns:minmax(0,1fr)}}
+.qnum{font:700 .78rem var(--f-body);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.qtext{font-size:1.1rem;font-weight:700;margin:4px 0 12px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:460px){.opts{grid-template-columns:minmax(0,1fr)}}
+.opt{appearance:none;text-align:left;border:1.5px solid var(--line);background:var(--board);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:1rem;font-weight:600;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft);text-decoration:line-through;text-decoration-color:var(--bad)}
+.opt:disabled{cursor:default}
+.fb{margin-top:12px;display:grid;gap:8px}
+.fb .verdict{font-weight:800;font-family:var(--f-display);font-size:1.05rem}
+.fb.good .verdict{color:var(--good)} .fb.bad .verdict{color:var(--bad)}
+.qfig[hidden]{display:none!important}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding-top:32px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect x="1" y="1" width="42" height="42" rx="10" fill="var(--panel)" stroke="var(--ink)" stroke-width="2"/><line x1="7" y1="26" x2="37" y2="26" stroke="var(--x)" stroke-width="3" stroke-linecap="round"/><line x1="16" y1="7" x2="16" y2="37" stroke="var(--y)" stroke-width="3" stroke-linecap="round"/><circle cx="29" cy="14" r="6" fill="none" stroke="var(--hit)" stroke-width="2.5"/><circle cx="29" cy="14" r="2" fill="var(--hit)"/></svg>
+    <div><h1>Coordinate Command</h1><p>Read the grid, plot the point, sink the fleet.</p></div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" id="tab-learn" data-view="learn" aria-controls="view-learn">Learn</button>
+    <button class="tab" role="tab" id="tab-computer" data-view="computer" aria-controls="view-computer">vs Computer</button>
+    <button class="tab" role="tab" id="tab-partner" data-view="partner" aria-controls="view-partner">vs Partner</button>
+  </nav>
+</header>
+
+<main>
+<!-- ============ LEARN ============ -->
+<section id="view-learn" role="tabpanel" aria-labelledby="tab-learn">
+  <div class="intro">
+    <h2>How the coordinate plane works</h2>
+    <p class="lead">Every point has an address. Learn to read it and plot it.</p>
+    <div class="key" aria-label="Colour key">
+      <span><i style="background:var(--x)"></i><b class="cx">x</b>&nbsp;left and right</span>
+      <span><i style="background:var(--y)"></i><b class="cy">y</b>&nbsp;up and down</span>
+      <span><i class="o"></i><b class="co">origin</b>&nbsp;<span class="pair">(0, 0)</span></span>
+    </div>
+  </div>
+
+  <div class="lesson">
+    <div class="ltext">
+      <p class="eyebrow">Part 1 · The grid</p>
+      <h3>Two number lines make a grid</h3>
+      <ul>
+        <li><b class="cx">x-axis</b> runs across. Right is +, left is −.</li>
+        <li><b class="cy">y-axis</b> runs up and down. Up is +, down is −.</li>
+        <li><b class="co">Origin</b> <span class="pair">(<span class="cx">0</span>, <span class="cy">0</span>)</span> is where they cross. Always start here.</li>
+      </ul>
+      <p class="tip"><b>Try it.</b> Tap or hover over any point.</p>
+    </div>
+    <figure class="sheet"><div id="fig-grid"></div></figure>
+  </div>
+
+  <div class="lesson single">
+    <div class="ltext" style="max-width:none">
+      <p class="eyebrow">Part 2 · Ordered pairs</p>
+      <h3>Reading an ordered pair</h3>
+      <p>Written <span class="pair">(<span class="cx">x</span>, <span class="cy">y</span>)</span>. x always comes first.</p>
+    </div>
+    <div class="anat">
+      <div class="bigpair" aria-label="Ordered pair 3, negative 2">(<span class="cx">3</span>,&#8202;<span class="cy">−2</span>)</div>
+      <div class="anat-notes">
+        <p class="an-x"><b>x = 3</b> → move 3 <b>right</b></p>
+        <p class="an-y"><b>y = −2</b> → move 2 <b>down</b></p>
+      </div>
+    </div>
+    <div class="twocol">
+      <div class="tablewrap">
+        <table class="signs">
+          <thead><tr><th scope="col"></th><th scope="col">+</th><th scope="col">0</th><th scope="col">−</th></tr></thead>
+          <tbody>
+            <tr><th scope="row" class="cx">x</th><td>right</td><td>stay</td><td>left</td></tr>
+            <tr><th scope="row" class="cy">y</th><td>up</td><td>stay</td><td>down</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tip"><b>Across, then up or down.</b> x comes before y in the alphabet.</p>
+    </div>
+  </div>
+
+  <div class="lesson">
+    <div class="ltext">
+      <p class="eyebrow">Part 3 · Plotting</p>
+      <h3>Watch the pencil plot a point</h3>
+      <ol class="steps" id="t-steps">
+        <li><span class="st"></span></li>
+        <li><span class="st"></span></li>
+        <li><span class="st"></span></li>
+        <li><span class="st"></span></li>
+      </ol>
+      <div class="stage-controls">
+        <div class="chips" id="t-examples" aria-label="Examples"></div>
+        <div class="row" style="align-items:flex-end">
+          <div id="t-entry"></div>
+          <button class="btn primary" id="t-play">Plot it</button>
+        </div>
+        <div class="row">
+          <button class="btn sm ghost" id="t-clear">Clear grid</button>
+        </div>
+        <p class="tip"><b>Count jumps, not lines.</b> The first jump lands on 1.</p>
+      </div>
+    </div>
+    <figure class="sheet"><div id="fig-pencil"></div><figcaption>Tap any point to plot it.</figcaption></figure>
+  </div>
+
+  <div class="lesson single" style="border-bottom:0">
+    <div class="quiz-head">
+      <div class="ltext"><p class="eyebrow">Part 4 · Self-check</p><h3>Check yourself</h3><p>Wrong answer? Read the hint and try again.</p></div>
+      <div class="row"><span class="score" id="quiz-score" aria-live="polite"></span><button class="btn sm ghost" id="quiz-reset">Start over</button></div>
+    </div>
+    <div class="quiz" id="quiz"></div>
+    <div class="cta">
+      <span><b>Ready?</b></span>
+      <button class="btn primary" data-view="computer" data-top="1">Play vs Computer</button>
+      <button class="btn" data-view="partner" data-top="1">Play vs Partner</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VS COMPUTER ============ -->
+<section id="view-computer" role="tabpanel" aria-labelledby="tab-computer" hidden>
+  <div class="game-intro">
+    <div><h2>Battle the computer</h2><p>Hide your five ships on the grid. Then take turns calling coordinates. Sink every ship in the computer's fleet before it sinks yours.</p></div>
+    <div class="legend js-legend"></div>
+  </div>
+  <div class="settings" id="vc-settings">
+    <div class="field"><label for="vc-grid">Grid</label><select id="vc-grid"><option value="4q">−5 to 5</option><option value="q1">0 to 10 (positive numbers only)</option></select></div>
+    <div class="field"><label for="vc-level">Computer</label><select id="vc-level"><option value="captain">Captain: hunts smart</option><option value="cadet">Cadet: fires at random</option></select></div>
+    <div class="field"><label for="vc-help">Grid helper</label><select id="vc-help"><option value="guides">Show path from origin</option><option value="coords">Path and coordinates</option><option value="off">Off (challenge)</option></select></div>
+    <label class="check"><input type="checkbox" id="vc-plot"> I plot the computer's shots myself</label>
+    <label class="check"><input type="checkbox" id="vc-anim" checked> Pencil animations</label>
+  </div>
+  <div class="console">
+    <div class="msg" id="vc-msg" aria-live="polite"></div>
+    <div class="fire-area" id="vc-fire-area" hidden><div id="vc-entry"></div><button class="btn primary big" id="vc-fire">Fire</button></div>
+    <div id="vc-setup-actions"><button class="btn primary big" id="vc-start" disabled>Start battle</button></div>
+    <div id="vc-over-actions" hidden><button class="btn primary big" id="vc-again">Play again</button></div>
+  </div>
+  <div class="boards">
+    <figure class="bcard" id="vc-target-card">
+      <figcaption><span class="cap">Target waters</span><span class="sub">The computer's fleet hides here</span></figcaption>
+      <div class="bwrap"><div id="vc-target"></div><div class="lock-note">Place your fleet, then press Start battle</div></div>
+      <ul class="fleet" id="vc-cpu-fleet"></ul>
+    </figure>
+    <figure class="bcard">
+      <figcaption><span class="cap">Your fleet</span><span class="sub" id="vc-mine-sub">Place your ships</span></figcaption>
+      <div id="vc-mine"></div>
+      <div class="tools" id="vc-tools"></div>
+      <ul class="fleet" id="vc-my-fleet"></ul>
+    </figure>
+  </div>
+  <div class="under">
+    <div class="stats" id="vc-stats"></div>
+    <details class="log"><summary>Shot log</summary><div class="logcols"><div><h4>Your shots</h4><ol id="vc-log-me"></ol></div><div><h4>Computer's shots</h4><ol id="vc-log-cpu"></ol></div></div></details>
+  </div>
+</section>
+
+<!-- ============ VS PARTNER ============ -->
+<section id="view-partner" role="tabpanel" aria-labelledby="tab-partner" hidden>
+  <div class="game-intro">
+    <div><h2>Battle a partner</h2><p>Play against a classmate. Call each shot as an ordered pair, and say it out loud: "x is 3, y is negative 2."</p></div>
+    <div class="legend js-legend"></div>
+  </div>
+
+  <div id="pp-setup" class="panel">
+    <fieldset class="modes">
+      <legend>How are you playing?</legend>
+      <label class="mode"><input type="radio" name="pp-mode" value="one" checked><span><b>One device, take turns</b><span>Pass the device back and forth. A cover screen hides your ships between turns.</span></span></label>
+      <label class="mode"><input type="radio" name="pp-mode" value="two"><span><b>Two devices, call it out</b><span>Sit across from each other, each on your own device. Call coordinates out loud and record your partner's answers.</span></span></label>
+    </fieldset>
+    <div class="settings">
+      <div class="field js-names"><label for="pp-n1">Player 1</label><input type="text" id="pp-n1" maxlength="16" placeholder="Player 1"></div>
+      <div class="field js-names"><label for="pp-n2">Player 2</label><input type="text" id="pp-n2" maxlength="16" placeholder="Player 2"></div>
+      <div class="field"><label for="pp-grid">Grid</label><select id="pp-grid"><option value="4q">−5 to 5</option><option value="q1">0 to 10 (positive numbers only)</option></select></div>
+      <div class="field"><label for="pp-help">Grid helper</label><select id="pp-help"><option value="guides">Show path from origin</option><option value="coords">Path and coordinates</option><option value="off">Off (challenge)</option></select></div>
+    </div>
+    <p class="small js-two-note" hidden>Both partners should choose the same grid.</p>
+    <div><button class="btn primary big" id="pp-go">Set up fleets</button></div>
+  </div>
+
+  <div id="pp-place" class="panel" hidden>
+    <div><h3 id="pp-place-title"></h3><p class="small" id="pp-place-sub"></p></div>
+    <div class="place-grid">
+      <figure class="bcard"><div id="pp-place-board"></div></figure>
+      <div class="tools" style="align-content:start">
+        <div id="pp-tools" class="tools" style="padding:0"></div>
+        <div><button class="btn primary big" id="pp-place-done" disabled>Done, hide my fleet</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pp-curtain" class="curtain" hidden>
+    <p class="eyebrow" id="pp-cur-eye"></p>
+    <h3 id="pp-cur-title"></h3>
+    <p id="pp-cur-sub"></p>
+    <div class="row" id="pp-cur-btns"></div>
+  </div>
+
+  <div id="pp-turn" hidden>
+    <div class="turn-head"><h3 id="pp-turn-title"></h3><button class="btn sm ghost" id="pp-quit">Change setup</button></div>
+    <div class="console">
+      <div class="msg" id="pp-msg" aria-live="polite"></div>
+      <div class="fire-area"><div id="pp-entry"></div><button class="btn primary big" id="pp-fire">Fire</button></div>
+      <div id="pp-end-wrap" hidden><button class="btn primary big" id="pp-end">End turn &amp; pass</button></div>
+    </div>
+    <div class="boards">
+      <figure class="bcard"><figcaption><span class="cap" id="pp-t-cap">Target waters</span><span class="sub">Your shots</span></figcaption><div id="pp-target"></div><ul class="fleet" id="pp-opp-fleet"></ul></figure>
+      <figure class="bcard"><figcaption><span class="cap">Your fleet</span><span class="sub">Your partner's shots</span></figcaption><div id="pp-mine"></div><ul class="fleet" id="pp-my-fleet"></ul></figure>
+    </div>
+  </div>
+
+  <div id="pp-call" hidden>
+    <div class="turn-head"><h3>Call it out</h3><div class="row"><button class="btn sm ghost" id="pp-call-new">New game</button><button class="btn sm ghost" id="pp-call-quit">Change setup</button></div></div>
+    <div class="boards" style="margin-top:0">
+      <figure class="bcard">
+        <figcaption><span class="cap">Your shots</span><span class="sub" id="pp-track-count"></span></figcaption>
+        <div id="pp-call-track"></div>
+        <p class="small call-msg">Choose a point and say its coordinates out loud. Your partner answers "hit" or "miss". Record it here.</p>
+        <div class="call-actions"><div id="pp-call-entry"></div><button class="btn hitbtn" id="pp-rec-hit">Record hit</button><button class="btn" id="pp-rec-miss">Record miss</button><button class="btn sm ghost" id="pp-rec-undo">Undo</button></div>
+        <div class="msg call-msg" id="pp-track-msg" aria-live="polite"></div>
+      </figure>
+      <figure class="bcard">
+        <figcaption><span class="cap">Your fleet</span><span class="sub">Your partner's shots</span></figcaption>
+        <div id="pp-call-fleet"></div>
+        <p class="small call-msg">When your partner calls a point, type it (or tap it), then check. Tell them what the app says.</p>
+        <div class="call-actions"><div id="pp-in-entry"></div><button class="btn primary" id="pp-in-check">Check</button></div>
+        <div class="msg call-msg" id="pp-in-msg" aria-live="polite"></div>
+        <ul class="fleet" id="pp-call-myfleet"></ul>
+      </figure>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const NS='http://www.w3.org/2000/svg';
+const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const fmt=n=>n<0?'−'+Math.abs(n):String(n);
+const C=(x,y)=>`<span class="pair">(<span class="cx">${fmt(x)}</span>, <span class="cy">${fmt(y)}</span>)</span>`;
+const key=(x,y)=>x+','+y;
+const sleep=ms=>new Promise(r=>setTimeout(r,RM?Math.min(ms,80):ms));
+const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function S(tag,attrs,parent){const e=document.createElementNS(NS,tag);if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function parseNum(v){v=String(v).trim().replace(/[−–—]/g,'-').replace(/\s+/g,'');if(!/^[+-]?\d+$/.test(v))return NaN;return parseInt(v,10);}
+function burst(cx,cy,R,r,n){let d='';for(let i=0;i<n*2;i++){const a=Math.PI*i/n-Math.PI/2,rr=i%2?r:R;d+=(i?'L':'M')+(cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1);}return d+'Z';}
+
+/* ---------------- Board ---------------- */
+class Board{
+  constructor(host,opt){
+    this.o=Object.assign({lo:-5,hi:5,labels:'edge',s:40,pad:40,hover:'off',title:'Coordinate grid',lg:false},opt||{});
+    this.svg=S('svg',{class:'board'+(this.o.lg?' lg':''),role:'img','aria-label':this.o.title});
+    host.appendChild(this.svg);
+    this.L={};
+    for(const n of ['base','deco','ships','trail','marks','preview','aim','pencil','hit'])this.L[n]=S('g',{class:'L-'+n},this.svg);
+    this.L.pencil.style.pointerEvents='none';
+    this.onClick=null;this.onHover=null;this.pencil=null;this.pencilPos=[0,0];this.tok=0;
+    this.svg.addEventListener('pointermove',e=>{const p=this.ptFrom(e);this.onHover?this.onHover(p):this.autoHover(p);});
+    this.svg.addEventListener('pointerleave',()=>{this.onHover?this.onHover(null):this.autoHover(null);});
+    this.svg.addEventListener('click',e=>{const p=this.ptFrom(e);if(!p)return;if(this.onClick)this.onClick(p);else this.autoHover(p);});
+    this.build();
+  }
+  X(x){return this.o.pad+(x-this.o.lo)*this.o.s}
+  Y(y){return this.o.pad+(this.o.hi-y)*this.o.s}
+  inRange(x,y){const{lo,hi}=this.o;return x>=lo&&x<=hi&&y>=lo&&y<=hi}
+  ptFrom(e){
+    const m=this.svg.getScreenCTM();if(!m)return null;
+    const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(m.inverse());
+    const{s,pad,lo,hi}=this.o;
+    const x=Math.round((p.x-pad)/s+lo),y=Math.round(hi-(p.y-pad)/s);
+    return this.inRange(x,y)?{x,y}:null;
+  }
+  setRange(lo,hi){this.o.lo=lo;this.o.hi=hi;this.build();}
+  build(){
+    for(const n in this.L)this.L[n].innerHTML='';
+    this.pencil=null;
+    const{lo,hi,s,pad,labels}=this.o,n=hi-lo,W=n*s+pad*2;
+    this.svg.setAttribute('viewBox',`0 0 ${W} ${W}`);
+    const b=this.L.base;
+    S('rect',{x:pad-s*.4,y:pad-s*.4,width:n*s+s*.8,height:n*s+s*.8,rx:8,class:'b-bg'},b);
+    for(let i=lo;i<=hi;i++){
+      S('line',{x1:this.X(i),y1:this.Y(hi),x2:this.X(i),y2:this.Y(lo),class:'b-grid'},b);
+      S('line',{x1:this.X(lo),y1:this.Y(i),x2:this.X(hi),y2:this.Y(i),class:'b-grid'},b);
+    }
+    const has0=lo<=0&&hi>=0,ext=s*.42;
+    if(has0){
+      const y0=this.Y(0),x0=this.X(0);
+      const xl=lo<0?this.X(lo)-ext:this.X(lo),xr=this.X(hi)+ext,yt=this.Y(hi)-ext,yb=lo<0?this.Y(lo)+ext:this.Y(lo);
+      S('line',{x1:xl,y1:y0,x2:xr-4,y2:y0,class:'b-ax-x'},b);
+      S('line',{x1:x0,y1:yb,x2:x0,y2:yt+4,class:'b-ax-y'},b);
+      S('polygon',{points:`${xr},${y0} ${xr-9},${y0-5} ${xr-9},${y0+5}`,class:'b-ar-x'},b);
+      S('polygon',{points:`${x0},${yt} ${x0-5},${yt+9} ${x0+5},${yt+9}`,class:'b-ar-y'},b);
+      if(lo<0){
+        S('polygon',{points:`${xl},${y0} ${xl+9},${y0-5} ${xl+9},${y0+5}`,class:'b-ar-x'},b);
+        S('polygon',{points:`${x0},${yb} ${x0-5},${yb-9} ${x0+5},${yb-9}`,class:'b-ar-y'},b);
+      }
+      const tx=S('text',{x:xr-2,y:y0-10,'text-anchor':'middle',class:'axname x'},b);tx.textContent='x';
+      const ty=S('text',{x:x0+13,y:yt+8,'text-anchor':'start',class:'axname y'},b);ty.textContent='y';
+    }
+    const T=(x,y,str,cls,anchor)=>{const t=S('text',{x,y,'text-anchor':anchor||'middle',class:'lbl '+cls},b);t.textContent=str;};
+    if(labels==='axis'&&has0){
+      for(let i=lo;i<=hi;i++){
+        if(i===0)continue;
+        T(this.X(i),this.Y(0)+18,fmt(i),'lbl-x');
+        T(this.X(0)-8,this.Y(i)+4.5,fmt(i),'lbl-y','end');
+      }
+      T(this.X(0)-8,this.Y(0)+18,'0','lbl-0','end');
+    }else{
+      for(let i=lo;i<=hi;i++){
+        T(this.X(i),this.Y(lo)+s*.4+16,fmt(i),'lbl-x');
+        T(this.X(lo)-s*.4-5,this.Y(i)+4.5,fmt(i),'lbl-y','end');
+      }
+    }
+    if(has0)S('circle',{cx:this.X(0),cy:this.Y(0),r:4.5,class:'origin'},b);
+    S('rect',{x:0,y:0,width:W,height:W,fill:'transparent'},this.L.hit);
+  }
+  text(x,y,str,cls,anchor,layer){const t=S('text',{x,y,'text-anchor':anchor||'start',class:cls},layer||this.L.deco);t.textContent=str;return t;}
+  pairText(px,py,x,y,g,anchor){
+    const t=S('text',{x:px,y:py,class:'b-pair','text-anchor':anchor||'start'},g);
+    const add=(str,cls)=>{const sp=S('tspan',cls?{class:cls}:null,t);sp.textContent=str;};
+    add('(');add(fmt(x),'tx');add(', ');add(fmt(y),'ty');add(')');
+    return t;
+  }
+  labelPos(x,y,below){
+    const s=this.o.s,right=x<this.o.hi-1;
+    return{px:this.X(x)+(right?s*.24:-s*.24),py:this.Y(y)+(below?s*.55:-s*.24),anchor:right?'start':'end'};
+  }
+  autoHover(p){const h=this.o.hover;if(h==='off'){this.guides(null);return;}this.guides(p,{label:h==='coords'});}
+  guides(p,opt){
+    const g=this.L.preview;g.innerHTML='';if(!p)return;
+    const{x,y}=p,s=this.o.s;
+    if(x!==0)S('line',{x1:this.X(0),y1:this.Y(0),x2:this.X(x),y2:this.Y(0),class:'g-x'},g);
+    if(y!==0)S('line',{x1:this.X(x),y1:this.Y(0),x2:this.X(x),y2:this.Y(y),class:'g-y'},g);
+    S('circle',{cx:this.X(x),cy:this.Y(y),r:s*.3,class:'g-ring'},g);
+    if(opt&&opt.label){const lp=this.labelPos(x,y,y>=this.o.hi-1);this.pairText(lp.px,lp.py,x,y,g,lp.anchor);}
+  }
+  setAim(p){
+    const g=this.L.aim;g.innerHTML='';if(!p||!this.inRange(p.x,p.y))return;
+    const s=this.o.s,cx=this.X(p.x),cy=this.Y(p.y),r=s*.36;
+    const a=S('g',{class:'aim'},g);
+    S('circle',{cx,cy,r},a);
+    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])S('line',{x1:cx+dx*r*.55,y1:cy+dy*r*.55,x2:cx+dx*r*1.35,y2:cy+dy*r*1.35},a);
+  }
+  drawShip(pts,g,cls){
+    if(!pts||!pts.length)return;
+    const s=this.o.s,a=pts[0],z=pts[pts.length-1];
+    const gg=S('g',{class:'ship '+(cls||'')},g);
+    const xy={x1:this.X(a[0]),y1:this.Y(a[1]),x2:this.X(z[0]),y2:this.Y(z[1])};
+    S('line',Object.assign({class:'ship-o','stroke-width':s*.62},xy),gg);
+    S('line',Object.assign({class:'ship-i','stroke-width':s*.62-5},xy),gg);
+    for(const p of pts)S('circle',{cx:this.X(p[0]),cy:this.Y(p[1]),r:s*.07,class:'ship-r'},gg);
+  }
+  setShips(ships,opt){
+    const o=opt||{},show=o.show||'all',g=this.L.ships;g.innerHTML='';
+    for(const sh of ships){
+      if(!sh.pts)continue;
+      if(show==='sunk'&&!sh.sunk)continue;
+      this.drawShip(sh.pts,g,sh.sunk?'sunk':(o.unsunkCls||''));
+    }
+  }
+  setMarks(list){const g=this.L.marks;g.innerHTML='';for(const m of list)this.mark(m,g);}
+  mark(m,g){
+    g=g||this.L.marks;
+    const s=this.o.s,cx=this.X(m.x),cy=this.Y(m.y);
+    const wrap=S('g',m.fresh?{class:'fresh'}:null,g);
+    if(m.t==='hit')S('path',{d:burst(cx,cy,s*.36,s*.15,8),class:'m-hit'},wrap);
+    else if(m.t==='miss'){S('circle',{cx,cy,r:s*.18,class:'m-miss'},wrap);S('circle',{cx,cy,r:s*.055,class:'m-miss-d'},wrap);}
+    else{
+      S('circle',{cx,cy,r:s*.15,class:'m-dot'},wrap);
+      if(m.label===true){const lp=this.labelPos(m.x,m.y,m.below);this.pairText(lp.px,lp.py,m.x,m.y,g,lp.anchor);}
+      else if(m.label){this.text(cx+s*.22,cy-s*.22,m.label,'b-letter','start',g);}
+    }
+  }
+  /* pencil */
+  ensurePencil(){
+    if(this.pencil)return this.pencil;
+    const g=S('g',{class:'pencil'},this.L.pencil);
+    const k=(this.o.s/40)*1.15;
+    const inner=S('g',{transform:`rotate(-38) scale(${k})`},g);
+    S('polygon',{points:'0,0 8,-2.6 8,2.6',fill:'#2b2b2b'},inner);
+    S('polygon',{points:'8,-2.6 18,-6.5 18,6.5 8,2.6',fill:'#ecc896'},inner);
+    S('rect',{x:18,y:-6.5,width:42,height:13,fill:'#f2b705'},inner);
+    S('rect',{x:18,y:-1,width:42,height:2,fill:'#d39500'},inner);
+    S('rect',{x:60,y:-7,width:8,height:14,fill:'#aab4ba'},inner);
+    S('rect',{x:67,y:-6.5,width:10,height:13,rx:3,fill:'#ee8fa3'},inner);
+    this.pencil=g;return g;
+  }
+  movePencilRaw(x,y){this.ensurePencil().setAttribute('transform',`translate(${this.X(x)},${this.Y(y)})`);}
+  pencilAt(x,y){const g=this.ensurePencil();g.style.display='';this.movePencilRaw(x,y);this.pencilPos=[x,y];}
+  hidePencil(){if(this.pencil)this.pencil.style.display='none';}
+  clearTrail(){this.L.trail.innerHTML='';}
+  stop(){this.tok++;}
+  pencilTo(x,y,opt){
+    const o=Object.assign({axis:'x',ms:300,counts:false,instant:false},opt||{});
+    return new Promise(res=>{
+      const[fx,fy]=this.pencilPos,dist=Math.abs(x-fx)+Math.abs(y-fy);
+      this.ensurePencil().style.display='';
+      if(dist===0){res();return;}
+      const line=S('line',{x1:this.X(fx),y1:this.Y(fy),x2:this.X(fx),y2:this.Y(fy),class:'trail '+o.axis},this.L.trail);
+      const dur=(RM||o.instant)?1:Math.max(450,dist*o.ms);
+      const sx=Math.sign(x-fx),sy=Math.sign(y-fy),tok=this.tok;let placed=0;const t0=performance.now();
+      const frame=now=>{
+        if(tok!==this.tok){res();return;}
+        const t=Math.min(1,(now-t0)/dur);
+        const e=t;
+        const cx=fx+(x-fx)*e,cy=fy+(y-fy)*e;
+        line.setAttribute('x2',this.X(cx));line.setAttribute('y2',this.Y(cy));
+        this.movePencilRaw(cx,cy);
+        if(o.counts){
+          const trav=Math.abs(cx-fx)+Math.abs(cy-fy);
+          while(placed<Math.floor(trav+1e-6)){
+            placed++;const px=fx+sx*placed,py=fy+sy*placed;
+            if(o.axis==='x')this.text(this.X(px),this.Y(py)-11,String(placed),'count x','middle',this.L.trail);
+            else this.text(this.X(px)+10,this.Y(py)+5,String(placed),'count y','start',this.L.trail);
+          }
+        }
+        if(t<1)requestAnimationFrame(frame);else{this.pencilPos=[x,y];res();}
+      };
+      if(dur<=1)frame(t0+5);else requestAnimationFrame(frame);
+    });
+  }
+  async walk(x,y,opt){
+    const o=Object.assign({from:[0,0],ms:300,counts:false},opt||{});
+    this.stop();const tok=this.tok;
+    const pause=Math.max(200,o.ms*0.9);
+    this.clearTrail();this.pencilAt(o.from[0],o.from[1]);
+    await sleep(pause);if(tok!==this.tok)return false;
+    await this.pencilTo(x,o.from[1],{axis:'x',ms:o.ms,counts:o.counts});
+    await sleep(pause);if(tok!==this.tok)return false;
+    await this.pencilTo(x,y,{axis:'y',ms:o.ms,counts:o.counts});
+    await sleep(pause*0.6);return tok===this.tok;
+  }
+}
+
+/* ---------------- Shared UI pieces ---------------- */
+function CoordEntry(host,opt){
+  const o=Object.assign({id:'c',onInput(){},onSubmit(){}},opt||{});
+  host.classList.add('centry');
+  const field=a=>`<div class="cf cf-${a}"><label for="${o.id}-${a}">${a}</label><div class="cf-row"><button type="button" class="sign" data-a="${a}" aria-label="Switch ${a} between positive and negative">±</button><input id="${o.id}-${a}" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="3" placeholder="?"></div></div>`;
+  host.innerHTML=`<span class="paren" aria-hidden="true">(</span>${field('x')}<span class="comma" aria-hidden="true">,</span>${field('y')}<span class="paren" aria-hidden="true">)</span>`;
+  const ix=$('#'+o.id+'-x',host),iy=$('#'+o.id+'-y',host),signs=$$('.sign',host);
+  signs.forEach(b=>b.addEventListener('click',()=>{const inp=b.dataset.a==='x'?ix:iy;let v=inp.value.trim().replace(/−/g,'-');v=v.startsWith('-')?v.slice(1):'-'+v.replace(/^\+/,'');inp.value=v;o.onInput();inp.focus();}));
+  [ix,iy].forEach(inp=>{
+    inp.addEventListener('input',()=>{const c=inp.value.replace(/[^\d\-+−]/g,'');if(c!==inp.value)inp.value=c;o.onInput();});
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();if(inp===ix&&iy.value.trim()==='')iy.focus();else o.onSubmit();}
+      else if(e.key===','&&inp===ix){e.preventDefault();iy.focus();iy.select();}
+    });
+  });
+  return{
+    get:()=>({x:parseNum(ix.value),y:parseNum(iy.value)}),
+    set(x,y){ix.value=String(x);iy.value=String(y);o.onInput();},
+    clear(){ix.value='';iy.value='';o.onInput();},
+    focus(){ix.focus();},
+    disable(d){[ix,iy,...signs].forEach(e=>e.disabled=d);}
+  };
+}
+function checkXY(x,y,lo,hi){
+  if(isNaN(x)&&isNaN(y))return'Type a whole number in each box: x first, then y.';
+  if(isNaN(x))return'The x box needs a whole number, like 3 or −2.';
+  if(isNaN(y))return'The y box needs a whole number, like 4 or −1.';
+  if(x<lo||x>hi)return`On this grid, x must be from ${fmt(lo)} to ${fmt(hi)}.`;
+  if(y<lo||y>hi)return`On this grid, y must be from ${fmt(lo)} to ${fmt(hi)}.`;
+  return null;
+}
+const ok=(x,y,lo,hi)=>!checkXY(x,y,lo,hi);
+
+/* legend */
+(function(){
+  const hit=burst(10,10,8,3.4,8);
+  const html=`<span><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="${hit}" class="m-hit"/></svg>Hit</span>
+  <span><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6" class="m-miss"/><circle cx="10" cy="10" r="2" class="m-miss-d"/></svg>Miss</span>
+  <span><svg width="38" height="20" viewBox="0 0 38 20" aria-hidden="true"><line x1="9" y1="10" x2="29" y2="10" stroke-width="14" class="ship-o"/><line x1="9" y1="10" x2="29" y2="10" stroke-width="10" class="ship-i"/></svg>Ship</span>
+  <span><svg width="38" height="20" viewBox="0 0 38 20" aria-hidden="true"><g class="ship sunk"><line x1="9" y1="10" x2="29" y2="10" stroke-width="14" class="ship-o"/><line x1="9" y1="10" x2="29" y2="10" stroke-width="10" class="ship-i"/></g></svg>Sunk</span>`;
+  $$('.js-legend').forEach(e=>e.innerHTML=html);
+})();
+
+/* ---------------- Fleet logic ---------------- */
+const FLEET=[['Carrier',5],['Battleship',4],['Submarine',3],['Destroyer',3],['Patrol boat',2]];
+const FLEET_POINTS=FLEET.reduce((a,f)=>a+f[1],0);
+const newFleet=()=>FLEET.map(([name,len])=>({name,len,pts:null,dir:'h',hits:new Set(),sunk:false}));
+const shipPts=(x,y,len,dir)=>{const p=[];for(let i=0;i<len;i++)p.push(dir==='h'?[x+i,y]:[x,y-i]);return p;};
+function fits(pts,lo,hi,ships,ignore){
+  for(const[x,y]of pts){
+    if(x<lo||x>hi||y<lo||y>hi)return false;
+    for(const s of ships){if(s===ignore||!s.pts)continue;if(s.pts.some(q=>q[0]===x&&q[1]===y))return false;}
+  }
+  return true;
+}
+function randomize(ships,lo,hi){
+  for(let a=0;a<200;a++){
+    ships.forEach(s=>s.pts=null);let good=true;
+    for(const s of ships){
+      let placed=false;
+      for(let k=0;k<400&&!placed;k++){
+        const dir=Math.random()<.5?'h':'v',pts=shipPts(rint(lo,hi),rint(lo,hi),s.len,dir);
+        if(fits(pts,lo,hi,ships,s)){s.pts=pts;s.dir=dir;placed=true;}
+      }
+      if(!placed){good=false;break;}
+    }
+    if(good)break;
+  }
+  ships.forEach(s=>{s.hits=new Set();s.sunk=false;});
+  return ships;
+}
+const shipAt=(ships,x,y)=>ships.find(s=>s.pts&&s.pts.some(p=>p[0]===x&&p[1]===y));
+function resolveShot(ships,shots,x,y){
+  const k=key(x,y);
+  if(shots.has(k))return{r:'repeat',prev:shots.get(k)};
+  const s=shipAt(ships,x,y);
+  if(s){s.hits.add(k);shots.set(k,'hit');if(s.hits.size===s.len)s.sunk=true;return{r:'hit',ship:s,sunk:s.sunk?s:null,win:ships.every(q=>q.sunk)};}
+  shots.set(k,'miss');return{r:'miss'};
+}
+const marksFrom=(shots,freshKey)=>[...shots].map(([k,t])=>{const[x,y]=k.split(',').map(Number);return{x,y,t,fresh:k===freshKey};});
+function fleetStatus(el,ships,showHits){
+  el.innerHTML=ships.map(s=>{
+    const h=showHits?s.hits.size:(s.sunk?s.len:0);
+    return`<li class="${s.sunk?'sunk':''}"><span>${s.name}</span><span class="pips" aria-label="${s.sunk?'sunk':h+' of '+s.len+' hit'}">${Array.from({length:s.len},(_,i)=>`<i class="${i<h?'h':''}"></i>`).join('')}</span></li>`;
+  }).join('');
+}
+const resTag=r=>r.r==='hit'?`<b class="res hit">${r.sunk?'Sunk':'Hit'}</b>`:`<b class="res miss">Miss</b>`;
+function logAdd(ol,x,y,r){const li=document.createElement('li');li.innerHTML=`${C(x,y)} ${resTag(r)}${r.sunk?' '+r.sunk.name:''}`;ol.appendChild(li);ol.scrollTop=ol.scrollHeight;}
+
+/* placement controller: click a ship to select it, click an empty point to move it, double-click to turn it */
+class Placer{
+  constructor(board,tools,opt){
+    this.b=board;this.tools=tools;this.onChange=(opt&&opt.onChange)||(()=>{});
+    this.ships=newFleet();this.sel=null;this.lastTap={ship:null,t:0};
+    tools.innerHTML=`<p class="place-msg" aria-live="polite"></p><div class="row"><button type="button" class="btn sm" data-a="shuffle">Shuffle ships</button></div>`;
+    this.msgEl=$('.place-msg',tools);
+    tools.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.dataset.a==='shuffle')this.shuffle();});
+    this.say();
+  }
+  get lo(){return this.b.o.lo} get hi(){return this.b.o.hi}
+  get ready(){return this.ships.every(s=>s.pts)}
+  attach(){this.b.onHover=p=>this.preview(p);this.b.onClick=p=>this.click(p);this.b.svg.classList.add('placing');this.refresh();}
+  detach(){this.b.onHover=null;this.b.onClick=null;this.b.svg.classList.remove('placing');this.b.L.preview.innerHTML='';this.sel=null;this.b.setShips(this.ships);}
+  reset(){this.ships=newFleet();randomize(this.ships,this.lo,this.hi);this.sel=null;this.say();this.refresh();}
+  say(t,warn){this.msgEl.innerHTML=t||'<b>Click a ship</b> to select it, then click where its front end should go. <b>Double-click a ship</b> to turn it.';this.msgEl.classList.toggle('warn',!!warn);}
+  preview(p){
+    const g=this.b.L.preview;g.innerHTML='';if(!p)return;
+    const occ=shipAt(this.ships,p.x,p.y);
+    if(occ)return;
+    if(!this.sel){this.b.guides(p,{label:true});return;}
+    const sh=this.sel,pts=shipPts(p.x,p.y,sh.len,sh.dir),good=fits(pts,this.lo,this.hi,this.ships,sh);
+    this.b.drawShip(pts.filter(q=>this.b.inRange(q[0],q[1])),g,'ghost'+(good?'':' bad'));
+    const lp=this.b.labelPos(p.x,p.y,p.y>=this.hi-1);this.b.pairText(lp.px,lp.py,p.x,p.y,g,lp.anchor);
+  }
+  click(p){
+    const occ=shipAt(this.ships,p.x,p.y),now=performance.now();
+    if(occ){
+      if(this.lastTap.ship===occ&&now-this.lastTap.t<450){this.lastTap={ship:null,t:0};this.rotate(occ,p);return;}
+      this.lastTap={ship:occ,t:now};
+      this.sel=occ;this.b.L.preview.innerHTML='';
+      this.say(`<b>${occ.name} selected.</b> Click an empty point to move its front end there, or double-click it to turn it.`);
+      this.refresh();return;
+    }
+    this.lastTap={ship:null,t:0};
+    if(!this.sel){this.say('Click a ship first to select it.',true);return;}
+    const sh=this.sel,pts=shipPts(p.x,p.y,sh.len,sh.dir);
+    if(!fits(pts,this.lo,this.hi,this.ships,sh)){this.say(`The ${sh.name} doesn't fit with its front end at ${C(p.x,p.y)}. Try another point.`,true);return;}
+    sh.pts=pts;this.sel=null;this.b.L.preview.innerHTML='';
+    this.say(`Moved the ${sh.name}. Its front end is at ${C(p.x,p.y)}.`);
+    this.refresh();
+  }
+  rotate(sh,p){
+    const nd=sh.dir==='h'?'v':'h',[fx,fy]=sh.pts[0],cands=[];
+    for(const[px,py]of[[fx,fy],[p.x,p.y],...sh.pts])
+      for(let k=0;k<sh.len;k++)cands.push(nd==='h'?shipPts(px-k,py,sh.len,nd):shipPts(px,py+k,sh.len,nd));
+    const fit=cands.find(c=>fits(c,this.lo,this.hi,this.ships,sh));
+    if(!fit){this.sel=sh;this.say(`No room to turn the ${sh.name} here. Move it somewhere more open first.`,true);this.refresh();return;}
+    sh.pts=fit;sh.dir=nd;this.sel=sh;
+    this.say(`Turned the ${sh.name} to run ${nd==='h'?'across':'up and down'}.`);
+    this.refresh();
+  }
+  shuffle(){randomize(this.ships,this.lo,this.hi);this.sel=null;this.say('Ships shuffled. Click a ship to move it, or double-click to turn it.');this.refresh();}
+  refresh(){
+    const g=this.b.L.ships;g.innerHTML='';
+    for(const s of this.ships)if(s.pts)this.b.drawShip(s.pts,g,s===this.sel?'sel':'');
+    this.onChange(this.ready);
+  }
+}
+
+/* computer player */
+class AI{
+  constructor(lo,hi,level){this.lo=lo;this.hi=hi;this.level=level;this.tried=new Set();this.open=[];}
+  free(x,y){return x>=this.lo&&x<=this.hi&&y>=this.lo&&y<=this.hi&&!this.tried.has(key(x,y));}
+  choose(){
+    let c=[];
+    if(this.level==='captain'&&this.open.length){
+      for(const[hx,hy]of this.open){
+        const row=this.open.filter(p=>p[1]===hy),col=this.open.filter(p=>p[0]===hx);
+        if(row.length>1){const xs=row.map(p=>p[0]);for(const x of[Math.min(...xs)-1,Math.max(...xs)+1])if(this.free(x,hy))c.push([x,hy]);}
+        if(col.length>1){const ys=col.map(p=>p[1]);for(const y of[Math.min(...ys)-1,Math.max(...ys)+1])if(this.free(hx,y))c.push([hx,y]);}
+      }
+      if(!c.length)for(const[hx,hy]of this.open)for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(this.free(hx+dx,hy+dy))c.push([hx+dx,hy+dy]);
+    }
+    if(!c.length){
+      const all=[];for(let x=this.lo;x<=this.hi;x++)for(let y=this.lo;y<=this.hi;y++)if(this.free(x,y))all.push([x,y]);
+      c=all;
+      if(this.level==='captain'){const par=all.filter(([x,y])=>((x+y)%2+2)%2===0);if(par.length)c=par;}
+    }
+    const[x,y]=c[Math.floor(Math.random()*c.length)];this.tried.add(key(x,y));return{x,y};
+  }
+  report(x,y,r){
+    if(r.r!=='hit')return;
+    this.open.push([x,y]);
+    if(r.sunk){const sk=new Set(r.sunk.pts.map(p=>key(p[0],p[1])));this.open=this.open.filter(p=>!sk.has(key(p[0],p[1])));}
+  }
+}
+
+/* ---------------- Tabs ---------------- */
+const views={learn:$('#view-learn'),computer:$('#view-computer'),partner:$('#view-partner')};
+function showView(name){
+  if(!views[name])name='learn';
+  for(const k in views)views[k].hidden=k!==name;
+  $$('.tab').forEach(t=>{const on=t.dataset.view===name;t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;});
+  try{localStorage.setItem('cc-view',name);}catch(e){}
+}
+$$('[data-view]').forEach(b=>b.addEventListener('click',()=>{showView(b.dataset.view);if(b.dataset.top)window.scrollTo({top:0,behavior:RM?'auto':'smooth'});}));
+$('.tabs').addEventListener('keydown',e=>{
+  if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+  const tabs=$$('.tab'),i=tabs.indexOf(document.activeElement);if(i<0)return;
+  const n=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];n.focus();n.click();
+});
+let startView=(location.hash||'').slice(1);
+if(!views[startView]){try{startView=localStorage.getItem('cc-view')||'learn';}catch(e){startView='learn';}}
+showView(startView);
+
+/* ---------------- LEARN: Part 1 ---------------- */
+{
+  const b=new Board($('#fig-grid'),{lo:-5,hi:5,labels:'axis',hover:'coords',title:'Coordinate plane showing the x-axis, the y-axis and the origin'});
+  b.text(b.X(5)-2,b.Y(0)-30,'x-axis','note x','end');
+  b.text(b.X(0)+14,b.Y(4.5)+5,'y-axis','note y','start');
+  b.text(b.X(0)+12,b.Y(0)-12,'origin (0, 0)','note o','start');
+  b.guides({x:-3,y:2},{label:true});
+}
+
+/* ---------------- LEARN: Part 3 pencil stage ---------------- */
+{
+  const tb=new Board($('#fig-pencil'),{lo:-6,hi:6,labels:'axis',title:'Pencil plotting a point, step by step'});
+  const lis=$$('#t-steps li'),playBtn=$('#t-play');
+  const st={busy:false,plotted:[],gid:0};
+  const texts=(x,y)=>[
+    `Start at the <b class="co">origin</b>.`,
+    x===0?`<b class="cx">x = 0</b>: don't move across.`:`<b class="cx">x = ${fmt(x)}</b>: move ${Math.abs(x)} <b class="cx">${x>0?'right':'left'}</b>.`,
+    y===0?`<b class="cy">y = 0</b>: don't move up or down.`:`<b class="cy">y = ${fmt(y)}</b>: move ${Math.abs(y)} <b class="cy">${y>0?'up':'down'}</b>.`,
+    `Plot and label ${C(x,y)}.`];
+  const setTexts=(x,y)=>texts(x,y).forEach((t,i)=>$('.st',lis[i]).innerHTML=t);
+  const setStep=i=>lis.forEach((li,k)=>{li.classList.toggle('on',k===i);li.classList.toggle('done',k<i);});
+  const entry=CoordEntry($('#t-entry'),{id:'t',onSubmit:()=>play()});
+  const gate=()=>sleep(1400);
+  async function run(x,y,instant){
+    const gid=++st.gid;st.busy=true;playBtn.disabled=true;
+    setTexts(x,y);
+    tb.clearTrail();tb.pencilAt(0,0);setStep(0);
+    if(!instant)await gate();if(gid!==st.gid)return;
+    setStep(1);await tb.pencilTo(x,0,{axis:'x',counts:true,ms:1000,instant});
+    if(!instant)await gate();if(gid!==st.gid)return;
+    setStep(2);await tb.pencilTo(x,y,{axis:'y',counts:true,ms:1000,instant});
+    if(!instant)await gate();if(gid!==st.gid)return;
+    setStep(3);
+    st.plotted=st.plotted.filter(m=>m.x!==x||m.y!==y);
+    st.plotted.forEach(m=>m.fresh=false);
+    st.plotted.push({x,y,t:'dot',label:true,fresh:!instant,below:y>=5});
+    tb.setMarks(st.plotted);
+    if(!instant)await sleep(700);
+    setStep(4);st.busy=false;playBtn.disabled=false;
+  }
+  function play(){
+    const{x,y}=entry.get(),err=checkXY(x,y,-6,6);
+    if(err){$('.st',lis[0]).innerHTML=`<b style="color:var(--warn)">${err}</b>`;setStep(0);return;}
+    tb.stop();st.gid++;
+    run(x,y,false);
+  }
+  playBtn.addEventListener('click',play);
+  const ex=[[3,2],[-4,1],[-2,-3],[5,-4],[0,3],[-5,0]];
+  $('#t-examples').innerHTML=ex.map(([x,y])=>`<button type="button" class="chip" data-x="${x}" data-y="${y}">${C(x,y)}</button>`).join('');
+  $('#t-examples').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;entry.set(+b.dataset.x,+b.dataset.y);play();});
+  tb.onClick=p=>{entry.set(p.x,p.y);play();};
+  tb.onHover=p=>tb.guides(p,{label:false});
+  $('#t-clear').addEventListener('click',()=>{tb.stop();st.gid++;st.busy=false;playBtn.disabled=false;st.plotted=[];tb.setMarks([]);tb.clearTrail();tb.pencilAt(0,0);setTexts(3,2);setStep(0);entry.clear();});
+  entry.set(3,2);
+  run(3,2,true);
+}
+
+/* ---------------- LEARN: Part 4 quiz ---------------- */
+{
+  const P=(x,y)=>C(x,y);
+  const QUIZ=[
+    {q:'What are the coordinates of point A?',fig:[{x:4,y:-3,label:'A'}],
+     opts:[P(4,-3),P(-3,4),P(-4,3),P(4,3)],a:0,
+     wrong:{1:'x and y are switched. x comes first.',2:'Check the signs. A is right (+) and down (−).',3:'A is below the x-axis, so y is negative.'},
+     why:`4 <b class="cx">right</b>, 3 <b class="cy">down</b>.`,show:{plot:[4,-3]}},
+    {q:`Which point is at ${P(-2,4)}?`,fig:[{x:-2,y:4,label:'A'},{x:4,y:-2,label:'B'},{x:2,y:4,label:'C'},{x:-4,y:2,label:'D'}],
+     opts:['A','B','C','D'],a:0,
+     wrong:{1:`B is ${P(4,-2)}: x and y switched.`,2:`C is ${P(2,4)}. −2 means left.`,3:`D is ${P(-4,2)}. Move 2 left, not 4.`},
+     why:`2 <b class="cx">left</b>, 4 <b class="cy">up</b>.`,show:{plot:[-2,4]}},
+    {q:`Plotting ${P(-5,2)}: what is the pencil's first move?`,
+     opts:['5 left','5 right','2 up','2 left'],a:0,
+     wrong:{1:'x is negative, so move left.',2:'Move across (x) first.',3:'x is −5, so the first move is 5.'},
+     why:`x first: <b class="cx">−5</b> means 5 left.`,show:{plot:[-5,2]}},
+    {q:`From the origin, where is ${P(-3,-5)}?`,
+     opts:['Right and up','Left and up','Left and down','Right and down'],a:2,
+     wrong:{0:'Both numbers are negative.',1:'y is −5, so it is down.',3:'x is −3, so it is left.'},
+     why:`<b class="cx">x</b> negative: left. <b class="cy">y</b> negative: down.`,show:{plot:[-3,-5]}},
+    {q:`Where is ${P(0,-4)}?`,
+     opts:['On the y-axis','On the x-axis','Right of the y-axis','At the origin'],a:0,
+     wrong:{1:'The x-axis has y = 0. Here x = 0.',2:'x = 0, so it never moves right.',3:'The origin is (0, 0).'},
+     why:`<b class="cx">x = 0</b>: no move across. It stays on the y-axis.`,show:{plot:[0,-4]}},
+    {q:`A sub at ${P(2,3)} moves 5 left and 4 down. Where is it now?`,
+     opts:[P(-3,-1),P(7,-1),P(-1,-3),P(-3,7)],a:0,
+     wrong:{1:'Left makes x smaller: 2 − 5.',2:'x and y are switched.',3:'Down makes y smaller: 3 − 4.'},
+     why:`<b class="cx">x</b>: 2 − 5 = −3. <b class="cy">y</b>: 3 − 4 = −1.`,show:{move:[[2,3],[-3,-1]]}},
+    {q:'Which point is left of the origin and above it?',fig:[{x:-3,y:2,label:'P'},{x:3,y:-2,label:'Q'},{x:-2,y:-3,label:'R'},{x:2,y:3,label:'S'}],
+     opts:['P','Q','R','S'],a:0,
+     wrong:{1:'Q is right and down.',2:'R is left, but down.',3:'S is up, but right.'},
+     why:`P is ${P(-3,2)}: x negative (left), y positive (up).`,show:{plot:[-3,2]}},
+    {q:`A ship covers ${P(1,4)}, ${P(2,4)}, ${P(3,4)}, ${P(4,4)}. What do they share?`,
+     opts:['y = 4: a horizontal line','x = 4: a vertical line','All on the y-axis','All negative'],a:0,
+     wrong:{1:'Check the second number. y stays 4; x changes.',2:'The y-axis has x = 0.',3:'All the numbers are positive.'},
+     why:'Only x changes, so the ship runs across at y = 4.',show:{ship:[[1,4],[2,4],[3,4],[4,4]]}},
+    {q:'Which point is farthest left?',
+     opts:[P(-2,5),P(3,-5),P(-5,1),P(0,-3)],a:2,
+     wrong:{0:'x = −2. Another point has a smaller x.',1:'That −5 is y, which means down.',3:'x = 0 is on the y-axis.'},
+     why:'Only x matters for left. Smallest x: −5.',show:{plot:[-5,1]}}
+  ];
+  const host=$('#quiz'),scoreEl=$('#quiz-score');
+  let state=[];
+  function score(){
+    const answered=state.filter(s=>s.done).length,first=state.filter(s=>s.done&&!s.missed).length;
+    scoreEl.textContent=answered?`${first} of ${answered} correct on the first try`+(answered===QUIZ.length?` · finished`:''):`${QUIZ.length} questions`;
+  }
+  async function show(q,s){
+    const b=s.board;
+    if(s.fig.hidden)s.fig.hidden=false;
+    const base=(q.fig||[]).map(m=>Object.assign({t:'dot'},m));
+    b.setMarks(base);b.setShips([]);b.L.preview.innerHTML='';
+    const sh=q.show;
+    if(sh.plot){
+      const[x,y]=sh.plot;
+      if(!await b.walk(x,y,{counts:true,ms:900}))return;
+      b.setMarks(base.concat([{x,y,t:'dot',label:true,below:true,fresh:true}]));
+    }else if(sh.move){
+      const[[fx,fy],[tx,ty]]=sh.move;
+      b.setMarks([{x:fx,y:fy,t:'dot',label:true}]);
+      if(!await b.walk(tx,ty,{from:[fx,fy],counts:true,ms:900}))return;
+      b.setMarks([{x:fx,y:fy,t:'dot',label:true},{x:tx,y:ty,t:'dot',label:true,below:true,fresh:true}]);
+    }else if(sh.ship){
+      const pts=sh.ship,[a,z]=[pts[0],pts[pts.length-1]];
+      if(!await b.walk(a[0],a[1],{ms:800}))return;
+      const tk=b.tok;await sleep(500);if(tk!==b.tok)return;
+      await b.pencilTo(z[0],z[1],{axis:'x',ms:900,counts:true});
+      b.setShips([{pts,sunk:false}]);
+      b.setMarks([{x:a[0],y:a[1],t:'dot',label:true,below:true},{x:z[0],y:z[1],t:'dot',label:true,below:true,fresh:true}]);
+    }
+  }
+  function build(){
+    host.innerHTML='';
+    state=QUIZ.map((q,i)=>{
+      const card=document.createElement('div');card.className='qcard';
+      card.innerHTML=`<div><p class="qnum">Question ${i+1} of ${QUIZ.length}</p><p class="qtext">${q.q}</p><div class="opts" role="group" aria-label="Answer choices"></div><div class="fb" aria-live="polite"></div></div><figure class="sheet qfig" style="padding:8px"></figure>`;
+      host.appendChild(card);
+      const s={done:false,missed:false,fig:$('.qfig',card)};
+      s.board=new Board(s.fig,{lo:-5,hi:5,labels:'axis',lg:true,title:'Graph for question '+(i+1)});
+      if(q.fig)s.board.setMarks(q.fig.map(m=>Object.assign({t:'dot'},m)));else s.fig.hidden=true;
+      const opts=$('.opts',card),fb=$('.fb',card);
+      q.opts.forEach((o,k)=>{
+        const btn=document.createElement('button');btn.type='button';btn.className='opt';btn.innerHTML=o;
+        btn.addEventListener('click',()=>{
+          if(s.done)return;
+          if(k===q.a){
+            s.done=true;btn.classList.add('right');$$('.opt',opts).forEach(x=>x.disabled=true);
+            fb.className='fb good';fb.innerHTML=`<p><span class="verdict">${s.missed?'Got it.':'Correct.'}</span> ${q.why}</p><div><button type="button" class="btn sm">Watch the pencil again</button></div>`;
+            $('button',fb).addEventListener('click',()=>show(q,s));
+            show(q,s);
+          }else{
+            s.missed=true;btn.classList.add('wrong');btn.disabled=true;
+            fb.className='fb bad';fb.innerHTML=`<p><span class="verdict">Not quite.</span> ${q.wrong[k]||''} Try again.</p>`;
+          }
+          score();
+        });
+        opts.appendChild(btn);
+      });
+      return s;
+    });
+    score();
+  }
+  $('#quiz-reset').addEventListener('click',build);
+  build();
+}
+
+/* ---------------- VS COMPUTER ---------------- */
+{
+  const VC={phase:'setup',grid:'4q',lo:-5,hi:5,level:'captain',help:'guides',plotOwn:false,anim:true,busy:false,gid:0,
+    cpuShips:[],cpuShots:new Map(),myShips:[],myShots:new Map(),ai:null,shots:0,hits:0,lastMe:'',lastCpu:''};
+  const tB=new Board($('#vc-target'),{title:"Target waters: the computer's hidden fleet"});
+  const mB=new Board($('#vc-mine'),{title:'Your fleet'});
+  const msg=$('#vc-msg'),card=$('#vc-target-card');
+  const placer=new Placer(mB,$('#vc-tools'),{onChange:r=>$('#vc-start').disabled=!r});
+  const entry=CoordEntry($('#vc-entry'),{id:'vc',onInput:aimFromEntry,onSubmit:fire});
+  function aimFromEntry(){if(VC.phase!=='play')return;const{x,y}=entry.get();tB.setAim(ok(x,y,VC.lo,VC.hi)?{x,y}:null);}
+  function say(main,tone,sub){
+    msg.dataset.tone=tone||'';
+    const recent=(VC.lastMe||VC.lastCpu)?`<ul class="m-recent">${VC.lastMe?`<li><span class="who">You</span>${VC.lastMe}</li>`:''}${VC.lastCpu?`<li><span class="who">Computer</span>${VC.lastCpu}</li>`:''}</ul>`:'';
+    msg.innerHTML=`<p class="m-main">${main}</p>${sub?`<p class="m-sub">${sub}</p>`:''}${recent}`;
+  }
+  function stats(){
+    const acc=VC.shots?Math.round(100*VC.hits/VC.shots)+'%':'–';
+    $('#vc-stats').innerHTML=`<div><b>${VC.shots}</b><span>Shots</span></div><div><b>${VC.hits}</b><span>Hits</span></div><div><b>${acc}</b><span>Accuracy</span></div>`;
+  }
+  function applyHelp(){tB.o.hover=VC.help;mB.o.hover=VC.help;tB.guides(null);}
+  function lockSettings(on){['#vc-grid','#vc-level'].forEach(s=>$(s).disabled=on);}
+  function setup(){
+    VC.gid++;VC.phase='setup';VC.busy=false;
+    const[lo,hi]=VC.grid==='q1'?[0,10]:[-5,5];VC.lo=lo;VC.hi=hi;
+    tB.setRange(lo,hi);mB.setRange(lo,hi);
+    placer.reset();placer.shuffle();placer.attach();
+    card.classList.add('locked');
+    $('#vc-tools').hidden=false;$('#vc-fire-area').hidden=true;$('#vc-setup-actions').hidden=false;$('#vc-over-actions').hidden=true;
+    $('#vc-mine-sub').textContent='Place your ships';
+    VC.cpuShips=newFleet();VC.lastMe=VC.lastCpu='';VC.shots=VC.hits=0;
+    fleetStatus($('#vc-cpu-fleet'),VC.cpuShips,false);$('#vc-my-fleet').innerHTML='';
+    $('#vc-log-me').innerHTML='';$('#vc-log-cpu').innerHTML='';
+    lockSettings(false);applyHelp();stats();
+    say('Place your fleet','', 'Click a ship to move it. Double-click a ship to turn it. Then press Start battle.');
+  }
+  function start(){
+    VC.gid++;VC.phase='play';
+    placer.detach();
+    VC.myShips=placer.ships;VC.myShips.forEach(s=>{s.hits=new Set();s.sunk=false;});
+    VC.cpuShips=randomize(newFleet(),VC.lo,VC.hi);
+    VC.cpuShots=new Map();VC.myShots=new Map();VC.ai=new AI(VC.lo,VC.hi,VC.level);
+    tB.setMarks([]);tB.setShips([]);tB.setAim(null);mB.setMarks([]);mB.setShips(VC.myShips);mB.clearTrail();mB.hidePencil();
+    card.classList.remove('locked');
+    $('#vc-tools').hidden=true;$('#vc-fire-area').hidden=false;$('#vc-setup-actions').hidden=true;
+    $('#vc-mine-sub').textContent="The computer's shots land here";
+    fleetStatus($('#vc-cpu-fleet'),VC.cpuShips,false);fleetStatus($('#vc-my-fleet'),VC.myShips,true);
+    lockSettings(true);applyHelp();entry.disable(false);$('#vc-fire').disabled=false;entry.clear();
+    say('Your turn','', "Pick a point in the computer's waters. Type its coordinates, x first, then press Fire.");
+    entry.focus();
+  }
+  async function fire(){
+    if(VC.phase!=='play'||VC.busy)return;
+    const{x,y}=entry.get(),err=checkXY(x,y,VC.lo,VC.hi);
+    if(err){say('Check your coordinates','warn',err);return;}
+    const r=resolveShot(VC.cpuShips,VC.cpuShots,x,y);
+    if(r.r==='repeat'){say(`You already fired at ${C(x,y)}`,'warn','It was a '+r.prev+'. Pick a point you haven’t tried yet.');return;}
+    VC.shots++;if(r.r==='hit')VC.hits++;
+    tB.setMarks(marksFrom(VC.cpuShots,key(x,y)));tB.setShips(VC.cpuShips,{show:'sunk'});tB.setAim(null);
+    logAdd($('#vc-log-me'),x,y,r);fleetStatus($('#vc-cpu-fleet'),VC.cpuShips,false);stats();
+    VC.lastMe=`${resTag(r)} at ${C(x,y)}${r.sunk?` · you sank the ${r.sunk.name}`:''}`;
+    entry.clear();
+    if(r.win){VC.lastCpu='';say('You win! Every enemy ship is sunk.','win',`You needed ${VC.shots} shots. Can you win in fewer next time?`);over();return;}
+    say(r.r==='hit'?(r.sunk?`Sunk! You sank the ${r.sunk.name}.`:`Hit at ${C(x,y)}!`):`Miss at ${C(x,y)}.`,r.r==='hit'?'hit':'','The computer is choosing a target…');
+    VC.busy=true;entry.disable(true);$('#vc-fire').disabled=true;
+    const gid=VC.gid;
+    await sleep(1000);
+    if(gid!==VC.gid)return;
+    await cpuTurn(gid);
+    if(gid!==VC.gid)return;
+    VC.busy=false;
+    if(VC.phase==='play'){entry.disable(false);$('#vc-fire').disabled=false;entry.focus();}
+  }
+  function waitPlot(p,gid){
+    return new Promise(res=>{
+      let tries=0;
+      mB.onClick=async q=>{
+        if(gid!==VC.gid){mB.onClick=null;res();return;}
+        if(q.x===p.x&&q.y===p.y){mB.onClick=null;res();return;}
+        tries++;
+        if(tries<2){say(`That point is ${C(q.x,q.y)}. Try again.`,'warn',`The computer called ${C(p.x,p.y)}. Move across for x first, then up or down for y.`);}
+        else{mB.onClick=null;say(`Watch the pencil find ${C(p.x,p.y)}.`,'warn',`You tapped ${C(q.x,q.y)}.`);await mB.walk(p.x,p.y,{ms:900,counts:true});res();}
+      };
+    });
+  }
+  async function cpuTurn(gid){
+    const p=VC.ai.choose();
+    if(VC.plotOwn){
+      say(`The computer calls ${C(p.x,p.y)}.`,'', 'Find that point on your fleet grid and tap it.');
+      mB.clearTrail();mB.hidePencil();
+      await waitPlot(p,gid);
+    }else{
+      say(`The computer calls ${C(p.x,p.y)}.`,'');
+      if(VC.anim)await mB.walk(p.x,p.y,{ms:420});else await sleep(500);
+    }
+    if(gid!==VC.gid)return;
+    const r=resolveShot(VC.myShips,VC.myShots,p.x,p.y);
+    VC.ai.report(p.x,p.y,r);
+    mB.setMarks(marksFrom(VC.myShots,key(p.x,p.y)));mB.setShips(VC.myShips);
+    logAdd($('#vc-log-cpu'),p.x,p.y,r);fleetStatus($('#vc-my-fleet'),VC.myShips,true);
+    VC.lastCpu=`${resTag(r)} at ${C(p.x,p.y)}${r.r==='hit'?(r.sunk?` · sank your ${r.ship.name}`:` · on your ${r.ship.name}`):''}`;
+    setTimeout(()=>{if(gid===VC.gid)mB.hidePencil();},900);
+    if(r.win){say('The computer sank your whole fleet.','hit','Play again and see if you can find its ships faster.');over();return;}
+    say('Your turn','', 'Type the coordinates of your next target, then press Fire.');
+  }
+  function over(){
+    VC.phase='over';VC.busy=false;
+    tB.setShips(VC.cpuShips,{show:'all',unsunkCls:'reveal'});tB.setAim(null);
+    $('#vc-fire-area').hidden=true;$('#vc-over-actions').hidden=false;
+    lockSettings(false);
+  }
+  tB.onClick=p=>{
+    if(VC.phase!=='play')return;
+    if(VC.help==='coords')entry.set(p.x,p.y);
+    else{tB.setAim(p);say('Target marked','', `Now work out its coordinates and type them in. Start at the origin: how far across, then how far up or down?`);}
+  };
+  $('#vc-start').addEventListener('click',start);
+  $('#vc-fire').addEventListener('click',fire);
+  $('#vc-again').addEventListener('click',setup);
+  $('#vc-grid').addEventListener('change',e=>{VC.grid=e.target.value;setup();});
+  $('#vc-level').addEventListener('change',e=>VC.level=e.target.value);
+  $('#vc-help').addEventListener('change',e=>{VC.help=e.target.value;applyHelp();});
+  $('#vc-plot').addEventListener('change',e=>VC.plotOwn=e.target.checked);
+  $('#vc-anim').addEventListener('change',e=>VC.anim=e.target.checked);
+  setup();
+}
+
+/* ---------------- VS PARTNER ---------------- */
+{
+  const PP={mode:'one',grid:'4q',lo:-5,hi:5,help:'guides',players:[],cur:0,last:null,track:new Map(),order:[]};
+  const panels=['pp-setup','pp-place','pp-curtain','pp-turn','pp-call'];
+  const show=id=>panels.forEach(p=>$('#'+p).hidden=p!==id);
+  const placeB=new Board($('#pp-place-board'),{title:'Place your fleet'});
+  const placer=new Placer(placeB,$('#pp-tools'),{onChange:r=>$('#pp-place-done').disabled=!r});
+  const tB=new Board($('#pp-target'),{title:"Your partner's waters"}),mB=new Board($('#pp-mine'),{title:'Your fleet'});
+  const ctB=new Board($('#pp-call-track'),{title:'Your shots'}),cfB=new Board($('#pp-call-fleet'),{title:'Your fleet'});
+  const allBoards=[placeB,tB,mB,ctB,cfB];
+  const msg=$('#pp-msg');
+  const say=(el,main,tone,sub)=>{el.dataset.tone=tone||'';el.innerHTML=`<p class="m-main">${main}</p>${sub?`<p class="m-sub">${sub}</p>`:''}`;};
+  const entry=CoordEntry($('#pp-entry'),{id:'pp',onInput:()=>{const{x,y}=entry.get();tB.setAim(ok(x,y,PP.lo,PP.hi)?{x,y}:null);},onSubmit:()=>fire()});
+
+  const modeRadios=$$('input[name="pp-mode"]');
+  const syncMode=()=>{const two=$('input[name="pp-mode"]:checked').value==='two';$$('.js-names').forEach(e=>e.hidden=two);$('.js-two-note').hidden=!two;};
+  modeRadios.forEach(r=>r.addEventListener('change',syncMode));syncMode();
+
+  $('#pp-go').addEventListener('click',()=>{
+    PP.mode=$('input[name="pp-mode"]:checked').value;
+    PP.grid=$('#pp-grid').value;PP.help=$('#pp-help').value;
+    [PP.lo,PP.hi]=PP.grid==='q1'?[0,10]:[-5,5];
+    allBoards.forEach(b=>{b.setRange(PP.lo,PP.hi);b.o.hover=PP.help;});
+    const n1=$('#pp-n1').value.trim()||'Player 1',n2=$('#pp-n2').value.trim()||'Player 2';
+    PP.players=[{name:n1,ships:null,shots:new Map()},{name:n2,ships:null,shots:new Map()}];
+    PP.last=null;
+    place(0);
+  });
+  function place(i){
+    PP.cur=i;show('pp-place');
+    const one=PP.mode==='one';
+    $('#pp-place-title').textContent=one?`${PP.players[i].name}, hide your fleet`:'Hide your fleet';
+    $('#pp-place-sub').textContent=one?`${PP.players[1-i].name}, look away while ${PP.players[i].name} places ships.`:'Keep your screen turned away from your partner.';
+    placer.reset();placer.shuffle();placer.attach();
+  }
+  $('#pp-place-done').addEventListener('click',()=>{
+    const pl=PP.players[PP.cur];pl.ships=placer.ships;pl.ships.forEach(s=>{s.hits=new Set();s.sunk=false;});pl.shots=new Map();
+    placer.detach();
+    if(PP.mode==='two'){callStart();return;}
+    if(PP.cur===0)curtain(1,'place');else curtain(0,'turn','Fleets ready');
+  });
+  function curtain(next,what,eye){
+    show('pp-curtain');
+    const nm=PP.players[next].name,other=PP.players[1-next].name;
+    $('#pp-cur-eye').textContent=eye||(what==='place'?'Fleet hidden':'Turn over');
+    $('#pp-cur-title').textContent=`Pass to ${nm}`;
+    $('#pp-cur-sub').textContent=`${other}, no peeking! ${nm}, press the button when you have the device.`;
+    const btns=$('#pp-cur-btns');btns.innerHTML='';
+    const b=document.createElement('button');b.className='btn primary big';b.textContent=`I'm ${nm}. Show my ${what==='place'?'grid':'boards'}`;
+    b.addEventListener('click',()=>what==='place'?place(next):turn(next));btns.appendChild(b);
+    b.focus();
+  }
+  async function turn(i){
+    PP.cur=i;show('pp-turn');
+    const me=PP.players[i],opp=PP.players[1-i];
+    $('#pp-turn-title').textContent=`${me.name}'s turn`;
+    $('#pp-t-cap').textContent=`${opp.name}'s waters`;
+    tB.setMarks(marksFrom(opp.shots));tB.setShips(opp.ships,{show:'sunk'});tB.setAim(null);
+    mB.setShips(me.ships);mB.setMarks(marksFrom(me.shots));mB.clearTrail();mB.hidePencil();
+    fleetStatus($('#pp-opp-fleet'),opp.ships,false);fleetStatus($('#pp-my-fleet'),me.ships,true);
+    entry.clear();entry.disable(false);$('#pp-fire').disabled=false;$('#pp-end-wrap').hidden=true;
+    const L=PP.last;
+    if(L&&L.by===1-i){
+      const what=L.r.r==='hit'?(L.r.sunk?`It sank your ${L.r.ship.name}.`:`It hit your ${L.r.ship.name}.`):'It missed.';
+      say(msg,`${opp.name} fired at ${C(L.x,L.y)}. ${what}`,L.r.r==='hit'?'hit':'',`Now it's your turn. Type the coordinates of a point in ${opp.name}'s waters, then press Fire.`);
+      mB.setMarks(marksFrom(me.shots));
+      await mB.walk(L.x,L.y,{ms:420});
+      mB.setMarks(marksFrom(me.shots,key(L.x,L.y)));
+      setTimeout(()=>mB.hidePencil(),800);
+    }else{
+      say(msg,'Take the first shot','',`Type the coordinates of a point in ${opp.name}'s waters, x first, then press Fire.`);
+    }
+    entry.focus();
+  }
+  function fire(){
+    if($('#pp-turn').hidden||$('#pp-fire').disabled)return;
+    const i=PP.cur,me=PP.players[i],opp=PP.players[1-i];
+    const{x,y}=entry.get(),err=checkXY(x,y,PP.lo,PP.hi);
+    if(err){say(msg,'Check your coordinates','warn',err);return;}
+    const r=resolveShot(opp.ships,opp.shots,x,y);
+    if(r.r==='repeat'){say(msg,`You already fired at ${C(x,y)}`,'warn',`It was a ${r.prev}. Pick a new point.`);return;}
+    tB.setMarks(marksFrom(opp.shots,key(x,y)));tB.setShips(opp.ships,{show:'sunk'});tB.setAim(null);
+    fleetStatus($('#pp-opp-fleet'),opp.ships,false);
+    PP.last={by:i,x,y,r};
+    entry.disable(true);$('#pp-fire').disabled=true;
+    if(r.win){gameOver(i);return;}
+    say(msg,r.r==='hit'?(r.sunk?`Sunk! You sank ${opp.name}'s ${r.sunk.name}.`:`Hit at ${C(x,y)}!`):`Miss at ${C(x,y)}.`,r.r==='hit'?'hit':'','Press End turn, then pass the device.');
+    $('#pp-end-wrap').hidden=false;$('#pp-end').focus();
+  }
+  function gameOver(i){
+    show('pp-curtain');
+    const w=PP.players[i],l=PP.players[1-i],shots=l.shots.size;
+    $('#pp-cur-eye').textContent='Game over';
+    $('#pp-cur-title').textContent=`${w.name} wins!`;
+    $('#pp-cur-sub').textContent=`${w.name} sank all of ${l.name}'s ships in ${shots} shots.`;
+    const btns=$('#pp-cur-btns');btns.innerHTML='';
+    const again=document.createElement('button');again.className='btn primary big';again.textContent='Play again';
+    again.addEventListener('click',()=>{PP.players.forEach(p=>{p.ships=null;p.shots=new Map();});PP.last=null;place(0);});
+    const change=document.createElement('button');change.className='btn big';change.textContent='Change setup';
+    change.addEventListener('click',()=>show('pp-setup'));
+    btns.append(again,change);
+  }
+  $('#pp-fire').addEventListener('click',fire);
+  $('#pp-end').addEventListener('click',()=>curtain(1-PP.cur,'turn'));
+  $('#pp-quit').addEventListener('click',()=>show('pp-setup'));
+  tB.onClick=p=>{if(PP.help==='coords')entry.set(p.x,p.y);else tB.setAim(p);};
+
+  /* two devices */
+  const trackE=CoordEntry($('#pp-call-entry'),{id:'ppc',onInput:()=>{const{x,y}=trackE.get();ctB.setAim(ok(x,y,PP.lo,PP.hi)?{x,y}:null);}});
+  const inE=CoordEntry($('#pp-in-entry'),{id:'ppi',onInput:()=>{const{x,y}=inE.get();cfB.setAim(ok(x,y,PP.lo,PP.hi)?{x,y}:null);},onSubmit:()=>check()});
+  const trackMsg=$('#pp-track-msg'),inMsg=$('#pp-in-msg');
+  function trackCount(){const h=[...PP.track.values()].filter(t=>t==='hit').length;$('#pp-track-count').textContent=`${h} of ${FLEET_POINTS} ship points hit`;return h;}
+  function callStart(){
+    show('pp-call');
+    const me=PP.players[0];
+    PP.track=new Map();PP.order=[];
+    ctB.setMarks([]);ctB.setAim(null);cfB.setShips(me.ships);cfB.setMarks([]);cfB.setAim(null);
+    fleetStatus($('#pp-call-myfleet'),me.ships,true);trackCount();
+    trackE.clear();inE.clear();
+    say(trackMsg,'Your turn first?','', 'Decide who goes first. Take turns: one shot each.');
+    inMsg.innerHTML='';
+  }
+  function record(t){
+    const{x,y}=trackE.get(),err=checkXY(x,y,PP.lo,PP.hi);
+    if(err){say(trackMsg,'Check your coordinates','warn',err);return;}
+    const k=key(x,y);
+    if(PP.track.has(k)){say(trackMsg,`You already called ${C(x,y)}`,'warn',`You recorded it as a ${PP.track.get(k)}.`);return;}
+    PP.track.set(k,t);PP.order.push(k);
+    ctB.setMarks(marksFrom(PP.track,k));ctB.setAim(null);trackE.clear();
+    const h=trackCount();
+    if(h>=FLEET_POINTS)say(trackMsg,'You hit every ship point. You win!','win','Check with your partner that their whole fleet is sunk.');
+    else say(trackMsg,`Recorded: ${t} at ${C(x,y)}`,t==='hit'?'hit':'','Now listen for your partner’s call.');
+  }
+  $('#pp-rec-hit').addEventListener('click',()=>record('hit'));
+  $('#pp-rec-miss').addEventListener('click',()=>record('miss'));
+  $('#pp-rec-undo').addEventListener('click',()=>{const k=PP.order.pop();if(!k)return;PP.track.delete(k);ctB.setMarks(marksFrom(PP.track));trackCount();say(trackMsg,'Last shot removed','');});
+  function check(){
+    const me=PP.players[0];
+    const{x,y}=inE.get(),err=checkXY(x,y,PP.lo,PP.hi);
+    if(err){say(inMsg,'Check the coordinates','warn',err);return;}
+    const r=resolveShot(me.ships,me.shots,x,y);
+    if(r.r==='repeat'){say(inMsg,`Your partner already called ${C(x,y)}`,'warn',`It was a ${r.prev}. Tell them to pick a new point.`);return;}
+    cfB.setMarks(marksFrom(me.shots,key(x,y)));cfB.setShips(me.ships);cfB.setAim(null);inE.clear();
+    fleetStatus($('#pp-call-myfleet'),me.ships,true);
+    if(r.win)say(inMsg,`Sunk! That was your last ship.`,'hit','Say “You sank my '+r.ship.name+'!” Your partner wins. Good game!');
+    else if(r.r==='hit')say(inMsg,r.sunk?`Hit, and your ${r.ship.name} sinks.`:`Hit on your ${r.ship.name}.`,'hit',r.sunk?`Say: “Hit. You sank my ${r.ship.name}!”`:'Say: “Hit!”');
+    else say(inMsg,`Miss at ${C(x,y)}.`,'','Say: “Miss.”');
+  }
+  $('#pp-in-check').addEventListener('click',check);
+  cfB.onClick=p=>inE.set(p.x,p.y);
+  ctB.onClick=p=>{if(PP.help==='coords')trackE.set(p.x,p.y);else ctB.setAim(p);};
+  $('#pp-call-new').addEventListener('click',()=>{PP.players[0].ships=null;place(0);});
+  $('#pp-call-quit').addEventListener('click',()=>show('pp-setup'));
+}
+})();
+</script>
+
+</body>
+</html>
